@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preventivatore | Delivery Care</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & TOKENS ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0d1b2a;
+  --ink2:#3d5166;
+  --ink3:#7a90a4;
+  --blue:#0047ab;
+  --blue2:#1a6fd4;
+  --blue-bg:#eef4fd;
+  --gold:#c47d0e;
+  --gold-bg:#fdf6e3;
+  --green:#1a6b3a;
+  --green-bg:#edf7f1;
+  --red:#c0392b;
+  --red-bg:#fdf0ee;
+  --bg:#f7f9fc;
+  --white:#ffffff;
+  --border:#dde4ed;
+  --border2:#c4cfdc;
+  --r:8px;
+  --r2:12px;
+  --sh:0 1px 4px rgba(13,27,42,.08),0 4px 16px rgba(13,27,42,.05);
+  --sh2:0 8px 40px rgba(13,27,42,.14);
+}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--blue);
+  height:60px;padding:0 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 12px rgba(0,71,171,.3);
+}
+.tb-left{display:flex;align-items:center;gap:14px}
+.tb-logo{
+  width:38px;height:38px;border-radius:9px;
+  background:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;color:#fff;letter-spacing:-.5px;flex-shrink:0;
+}
+.tb-title{font-size:15px;font-weight:600;color:#fff}
+.tb-sub{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em}
+.tb-right{display:flex;align-items:center;gap:10px}
+.key-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);flex-shrink:0;transition:background .3s}
+.key-dot.on{background:#4ade80}
+.key-dot.off{background:#f87171}
+.key-label{font-size:11px;color:rgba(255,255,255,.5)}
+.btn-settings{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  color:#fff;border-radius:6px;padding:6px 13px;
+  font-size:12px;font-weight:500;font-family:'Sora',sans-serif;
+  cursor:pointer;transition:background .18s;
+}
+.btn-settings:hover{background:rgba(255,255,255,.2)}
+
+/* ── PAGE SWITCHER ── */
+.pager{
+  background:var(--white);border-bottom:1px solid var(--border);
+  padding:0 32px;display:flex;gap:0;
+}
+.pager-tab{
+  padding:16px 28px;font-size:13px;font-weight:500;color:var(--ink3);
+  border-bottom:3px solid transparent;cursor:pointer;
+  display:flex;align-items:center;gap:9px;transition:all .18s;white-space:nowrap;
+}
+.pager-tab:hover{color:var(--blue2)}
+.pager-tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.pager-tab.done{color:var(--green)}
+.pager-tab .pn{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--border);color:var(--white);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;flex-shrink:0;transition:background .18s;
+}
+.pager-tab.active .pn{background:var(--blue)}
+.pager-tab.done .pn{background:var(--green)}
+
+/* ── MAIN ── */
+.wrap{max-width:980px;margin:0 auto;padding:32px 24px}
+.page{display:none}.page.active{display:block}
+
+/* ── SECTION BLOCKS ── */
+.block{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--r2);box-shadow:var(--sh);
+  margin-bottom:20px;overflow:hidden;
+}
+.block-head{
+  padding:16px 22px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.block-head .ico{font-size:18px;line-height:1}
+.block-head h2{font-size:14px;font-weight:600;color:var(--ink)}
+.block-head .sub{font-size:12px;color:var(--ink3);margin-top:1px}
+.block-head .ml{margin-left:auto;display:flex;align-items:center;gap:8px}
+.block-body{padding:22px}
+
+/* ── UPLOAD ZONE ── */
+.drop-zone{
+  border:2px dashed var(--border2);border-radius:var(--r);
+  background:var(--blue-bg);padding:28px 20px;
+  text-align:center;cursor:pointer;transition:all .18s;
+}
+.drop-zone:hover,.drop-zone.over{border-color:var(--blue2);background:#ddeaf9}
+.drop-zone input{display:none}
+.drop-zone .dico{font-size:32px;margin-bottom:8px}
+.drop-zone h3{font-size:14px;font-weight:600;color:var(--blue);margin-bottom:3px}
+.drop-zone p{font-size:12px;color:var(--ink3)}
+.file-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--white);border:1px solid var(--border);
+  border-radius:20px;padding:5px 14px;font-size:12px;
+  color:var(--blue);font-weight:500;margin-top:10px;
+}
+
+/* ── FORMS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}
+.fg input,.fg select,.fg textarea{
+  border:1.5px solid var(--border);border-radius:6px;
+  padding:9px 12px;font-size:13px;font-family:'Sora',sans-serif;
+  color:var(--ink);background:var(--white);width:100%;
+  transition:border-color .18s,box-shadow .18s;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  outline:none;border-color:var(--blue2);
+  box-shadow:0 0 0 3px rgba(26,111,212,.1);
+}
+.fg textarea{resize:vertical;min-height:72px}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 20px;border-radius:7px;
+  font-size:13px;font-weight:600;font-family:'Sora',sans-serif;
+  cursor:pointer;border:none;transition:all .18s;text-decoration:none;
+}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{background:var(--blue2)}
+.btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:#a86a0a}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#155c31}
+.btn-ghost{background:var(--bg);border:1.5px solid var(--border);color:var(--ink2)}.btn-ghost:hover{border-color:var(--border2);background:#edf0f5}
+.btn-link{background:none;border:none;color:var(--blue2);font-size:13px;font-weight:500;cursor:pointer;padding:4px 0;font-family:'Sora',sans-serif}
+.btn-link:hover{text-decoration:underline}
+.btn-icon{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:15px;padding:4px 6px;border-radius:5px;transition:all .15s}
+.btn-icon:hover{background:var(--red-bg);color:var(--red)}
+.btn-sm{padding:6px 14px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:24px}
+
+/* ── ALERTS ── */
+.alert{
+  padding:11px 15px;border-radius:7px;
+  font-size:12.5px;font-weight:500;
+  display:flex;align-items:flex-start;gap:9px;margin-bottom:16px;
+  border-left:3px solid;
+}
+.alert-info{background:var(--blue-bg);color:var(--blue);border-color:var(--blue2)}
+.alert-ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.alert-warn{background:var(--gold-bg);color:var(--gold);border-color:var(--gold)}
+.alert-err{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+
+/* ── MANSIONE CARD ── */
+.mans-card{
+  border:1.5px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;margin-bottom:10px;
+  transition:border-color .18s;background:var(--white);
+}
+.mans-card:hover{border-color:var(--border2)}
+.mans-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mans-name{font-weight:600;font-size:14px;color:var(--ink)}
+.mans-meta{font-size:12px;color:var(--ink3);margin-top:2px}
+.mans-acc{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 11px;border-radius:20px;font-size:11.5px;font-weight:500;
+}
+.chip-blue{background:var(--blue-bg);color:var(--blue)}
+.chip-gold{background:var(--gold-bg);color:var(--gold)}
+.chip-green{background:var(--green-bg);color:var(--green)}
+.chip-gray{background:#f1f4f8;color:var(--ink3)}
+.acc-warn{
+  font-size:11px;color:var(--gold);
+  background:var(--gold-bg);border-radius:5px;
+  padding:4px 10px;margin-top:6px;display:inline-block;
+}
+
+/* ── SEDE ROW ── */
+.sede-block{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;margin-bottom:10px;
+}
+.sede-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sede-title{font-weight:600;font-size:13px;color:var(--ink)}
+.sede-mansioni{display:flex;flex-wrap:wrap;gap:8px}
+
+/* ── PRICE TABLE ── */
+.ptable{width:100%;border-collapse:collapse;font-size:12.5px}
+.ptable th{
+  background:var(--blue);color:#fff;
+  padding:10px 12px;text-align:left;
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  white-space:nowrap;
+}
+.ptable th.green-h{background:var(--green)}
+.ptable td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ptable tr:last-child td{border-bottom:none}
+.ptable tr:hover td{background:#f8fafc}
+.ptable tr.sel td{background:var(--green-bg)}
+.ptable .nr{text-align:right}
+.ptable .nc{text-align:center}
+.price-ref{color:var(--ink3);font-size:12px}
+.price-net{
+  font-weight:700;color:var(--green);
+}
+.pct-input{
+  width:62px;padding:5px 7px;font-size:12px;
+  border:1.5px solid var(--border);border-radius:5px;
+  font-family:'JetBrains Mono',monospace;text-align:right;
+  transition:border-color .15s;
+}
+.pct-input:focus{outline:none;border-color:var(--blue2)}
+.net-input{
+  width:76px;padding:5px 7px;font-size:12px;font-weight:600;
+  border:1.5px solid #9fd4b0;border-radius:5px;
+  background:var(--green-bg);color:var(--green);
+  font-family:'JetBrains Mono',monospace;text-align:right;
+  transition:border-color .15s;
+}
+.net-input:focus{outline:none;border-color:var(--green)}
+.qty-input{
+  width:52px;padding:5px 7px;font-size:12px;
+  border:1.5px solid var(--border);border-radius:5px;
+  font-family:'JetBrains Mono',monospace;text-align:center;
+}
+.section-divider{
+  display:flex;align-items:center;gap:12px;
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--blue);
+  margin:22px 0 14px;
+}
+.section-divider::before,.section-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.totale-bar{
+  background:var(--blue);color:#fff;
+  border-radius:var(--r);padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;margin-top:20px;
+}
+.tot-item{text-align:center}
+.tot-item .v{font-size:20px;font-weight:700}
+.tot-item .l{font-size:10px;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
+.tot-sep{width:1px;height:40px;background:rgba(255,255,255,.2)}
+
+/* ── MODALE ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(13,27,42,.5);backdrop-filter:blur(4px);
+  z-index:500;align-items:center;justify-content:center;padding:20px;
+}
+.modal-bg.open{display:flex}
+.modal-box{
+  background:var(--white);border-radius:var(--r2);
+  padding:32px 36px;max-width:480px;width:100%;
+  box-shadow:var(--sh2);
+}
+.modal-box h3{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.modal-box p{font-size:12.5px;color:var(--ink3);margin-bottom:20px;line-height:1.6}
+
+/* ── LOADING ── */
+.loading{
+  display:none;position:fixed;inset:0;
+  background:rgba(13,27,42,.45);backdrop-filter:blur(3px);
+  z-index:999;align-items:center;justify-content:center;
+}
+.loading.show{display:flex}
+.lbox{background:var(--white);border-radius:var(--r2);padding:36px 44px;text-align:center;box-shadow:var(--sh2)}
+.spin{
+  width:44px;height:44px;border:3.5px solid var(--blue-bg);
+  border-top-color:var(--blue);border-radius:50%;
+  animation:spin .85s linear infinite;margin:0 auto 14px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lbox p{font-size:14px;font-weight:600;color:var(--blue)}
+.lbox small{font-size:11.5px;color:var(--ink3)}
+
+/* ── MISC ── */
+.tag-ai{
+  display:inline-flex;align-items:center;gap:4px;
+  background:#fff8e1;color:#b45309;border:1px solid #fcd34d;
+  border-radius:12px;font-size:10.5px;font-weight:600;padding:2px 9px;
+}
+.divider{height:1px;background:var(--border);margin:20px 0}
+.scroll-x{overflow-x:auto}
+.note-area{
+  width:100%;min-height:90px;border:1.5px solid var(--border);
+  border-radius:6px;padding:10px 13px;font-size:13px;
+  font-family:'Sora',sans-serif;color:var(--ink);resize:vertical;
+}
+.note-area:focus{outline:none;border-color:var(--blue2)}
+
+@media(max-width:680px){
+  .grid2,.grid3,.grid4{grid-template-columns:1fr}
+  .topbar{padding:0 16px}
+  .wrap{padding:16px}
+  .totale-bar{flex-direction:column;align-items:flex-start}
+  .tot-sep{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading" id="loader">
+  <div class="lbox">
+    <div class="spin"></div>
+    <p id="loaderMsg">Elaborazione...</p>
+    <small>Gemini AI sta analizzando il documento</small>
+  </div>
+</div>
+
+<!-- MODALE ANTEPRIMA -->
+<div class="modal-bg" id="prevModal" onclick="if(event.target===this)closePrev()">
+  <div style="background:var(--white);border-radius:var(--r2);max-width:860px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--sh2)">
+    <div style="position:sticky;top:0;background:var(--blue);color:#fff;padding:12px 22px;display:flex;justify-content:space-between;align-items:center;border-radius:var(--r2) var(--r2) 0 0">
+      <span style="font-weight:600;font-size:14px">Anteprima Preventivo</span>
+      <button onclick="closePrev()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div id="prevBody" style="padding:32px;font-size:12px;line-height:1.7"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- TOPBAR -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="topbar">
+  <div class="tb-left">
+    <div class="tb-logo">DC</div>
+    <div>
+      <div class="tb-title">Preventivatore</div>
+      <div class="tb-sub">Delivery Care · Medicina del Lavoro</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- PAGER -->
+<div class="pager">
+  <div class="pager-tab active" id="ptab0" onclick="goPage(0)">
+    <div class="pn">1</div> Dati Cliente & Mansioni
+  </div>
+  <div class="pager-tab" id="ptab1" onclick="goPage(1)">
+    <div class="pn">2</div> Prezzi & Genera PDF
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PAGINA 1 — DATI CLIENTE & MANSIONI                -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="page active" id="pg0">
+
+  <!-- LISTINO (solo pulsante) -->
+  <div class="block">
+    <div class="block-head">
+      <span class="ico">📋</span>
+      <div>
+        <h2>Listino prezzi</h2>
+        <div class="sub">Listino Delivery Care precaricato · sostituisci se necessario</div>
+      </div>
+      <div class="ml">
+        <span id="listinoStatus" style="font-size:12px;color:var(--green);font-weight:500">✅ Listino standard attivo</span>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('listinoFile').click()">📂 Sostituisci con Excel/CSV</button>
+        <input type="file" id="listinoFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="loadListino(this.files[0])">
+      </div>
+    </div>
+  </div>
+
+  <!-- CARICAMENTO DOCUMENTO -->
+  <div class="block">
+    <div class="block-head">
+      <span class="ico">📄</span>
+      <div>
+        <h2>Carica richiesta preventivo / DVR</h2>
+        <div class="sub">Claude estrae automaticamente dati azienda, sedi e mansioni</div>
+      </div>
+    </div>
+    <div class="block-body">
+      <div class="drop-zone" id="docZone" onclick="document.getElementById('docFile').click()"
+           ondragover="dzOver(event,'docZone')" ondragleave="dzOut(event,'docZone')" ondrop="dzDrop(event)">
+        <div class="dico">📎</div>
+        <h3>Trascina PDF, DVR o testo della richiesta</h3>
+        <p>PDF · TXT · DOCX — Gemini AI estrarrà dati azienda, mansioni e sedi</p>
+        <input type="file" id="docFile" accept=".pdf,.txt,.docx" onchange="loadDoc(this.files[0])">
+        <div id="docFname"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-blue btn-sm" id="extractBtn" onclick="extractDoc()" disabled>🤖 Estrai con Gemini AI</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearDoc()">✕ Rimuovi</button>
+        <span style="font-size:12px;color:var(--ink3)">oppure compila manualmente i campi sotto</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATI AZIENDA -->
+  <div class="block">
+    <div class="block-head">
+      <span class="ico">🏢</span>
+      <div><h2>Dati azienda cliente</h2></div>
+      <div class="ml">
+        <div class="fg" style="flex-direction:row;align-items:center;gap:8px">
+          <label style="margin:0;white-space:nowrap">Multi-sede</label>
+          <input type="checkbox" id="isMultisede" onchange="toggleMultisede()" style="width:18px;height:18px;cursor:pointer">
+        </div>
+      </div>
+    </div>
+    <div class="block-body">
+      <div class="grid2">
+        <div class="fg"><label>Ragione Sociale *</label><input type="text" id="c_rag" placeholder="es. Omega Ambiente Srl"></div>
+        <div class="fg"><label>P.IVA / C.F.</label><input type="text" id="c_piva" placeholder="12345678901"></div>
+        <div class="fg"><label>Sede Legale</label><input type="text" id="c_sede" placeholder="Via Roma 1, 00100 Roma"></div>
+        <div class="fg"><label>Settore / ATECO</label><input type="text" id="c_ateco" placeholder="es. Pulizie industriali (81.21)"></div>
+        <div class="fg"><label>Referente</label><input type="text" id="c_ref" placeholder="Nome Cognome"></div>
+        <div class="fg"><label>Email</label><input type="email" id="c_email" placeholder="referente@azienda.it"></div>
+        <div class="fg"><label>Telefono</label><input type="text" id="c_tel" placeholder="+39 06 1234567"></div>
+        <div class="fg"><label>N° lavoratori totali</label><input type="number" id="c_nlav" placeholder="0" min="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEDI (multi-sede) -->
+  <div class="block" id="sediBlock" style="display:none">
+    <div class="block-head">
+      <span class="ico">📍</span>
+      <div><h2>Sedi operative</h2><div class="sub">Dettaglio lavoratori per sede (Allegato A)</div></div>
+      <div class="ml"><button class="btn btn-ghost btn-sm" onclick="addSede()">➕ Aggiungi sede</button></div>
+    </div>
+    <div class="block-body">
+      <div id="sediList">
+        <div class="alert alert-info">ℹ️ Aggiungi le sedi con il numero di lavoratori per mansione.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANSIONI -->
+  <div class="block">
+    <div class="block-head">
+      <span class="ico">👤</span>
+      <div><h2>Mansioni & Accertamenti</h2><div class="sub">Inserisci le mansioni — l'AI suggerisce gli accertamenti secondo D.Lgs 81/2008</div></div>
+    </div>
+    <div class="block-body">
+
+      <!-- Form aggiungi mansione -->
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;padding:14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)">
+        <div class="fg" style="flex:2;min-width:180px">
+          <label>Mansione</label>
+          <input type="text" id="newMansNome" placeholder="es. Addetto alle pulizie" onkeydown="if(event.key==='Enter')addMans()">
+        </div>
+        <div class="fg" style="width:100px">
+          <label>N° lavoratori</label>
+          <input type="number" id="newMansN" value="1" min="1">
+        </div>
+        <div class="fg" style="width:130px">
+          <label>Periodicità</label>
+          <select id="newMansPer">
+            <option>12 mesi</option>
+            <option>24 mesi</option>
+            <option>60 mesi</option>
+            <option>Su richiesta</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;padding-bottom:1px">
+          <button class="btn btn-ghost btn-sm" onclick="addMans()">➕ Aggiungi</button>
+          <button class="btn btn-blue btn-sm" onclick="analyzeAI()">🤖 Analizza con AI</button>
+        </div>
+      </div>
+
+      <div id="mansList"></div>
+    </div>
+  </div>
+
+  <!-- INTESTAZIONE PREVENTIVO -->
+  <div class="block">
+    <div class="block-head">
+      <span class="ico">📝</span>
+      <div><h2>Intestazione preventivo</h2></div>
+    </div>
+    <div class="block-body">
+      <div class="grid3">
+        <div class="fg"><label>N° Offerta</label><input type="text" id="p_num" placeholder="DC-2026-001"></div>
+        <div class="fg"><label>Data</label><input type="date" id="p_data"></div>
+        <div class="fg"><label>Città emissione</label><input type="text" id="p_citta" value="Milano"></div>
+        <div class="fg"><label>Tipo offerta</label>
+          <select id="p_tipo">
+            <option>Sorveglianza Sanitaria</option>
+            <option>Servizi integrati: Formazione - Sorveglianza Sanitaria</option>
+            <option>Sorveglianza Sanitaria e Formazione</option>
+            <option>Nomina Medico Competente</option>
+          </select>
+        </div>
+        <div class="fg"><label>Validità (giorni)</label><input type="number" id="p_val" value="30"></div>
+        <div class="fg"><label>Redatto da</label><input type="text" id="p_redattore" placeholder="es. Giulio Tifoni"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <span></span>
+    <button class="btn btn-blue" onclick="goPage(1);buildPricePage()">Avanti: Prezzi & PDF →</button>
+  </div>
+</div><!-- /pg0 -->
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PAGINA 2 — PREZZI & GENERA PDF                    -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="page" id="pg1">
+
+  <div id="priceContent"></div>
+
+  <!-- TOTALE -->
+  <div class="totale-bar" id="totaleBar">
+    <div class="tot-item"><div class="v" id="tLav">—</div><div class="l">Lavoratori</div></div>
+    <div class="tot-sep"></div>
+    <div class="tot-item"><div class="v" id="tVoci">—</div><div class="l">Voci selezionate</div></div>
+    <div class="tot-sep"></div>
+    <div class="tot-item"><div class="v" id="tLordo">€ —</div><div class="l">Totale lordo</div></div>
+    <div class="tot-sep"></div>
+    <div class="tot-item"><div class="v" id="tSconto">€ —</div><div class="l">Sconto totale</div></div>
+    <div class="tot-sep"></div>
+    <div class="tot-item"><div class="v" id="tNetto" style="color:#fde68a">€ —</div><div class="l">Totale netto</div></div>
+  </div>
+
+  <!-- NOTE & TERMINI -->
+  <div class="block" style="margin-top:20px">
+    <div class="block-head">
+      <span class="ico">📋</span>
+      <div><h2>Note & Condizioni di fornitura</h2></div>
+    </div>
+    <div class="block-body">
+      <textarea class="note-area full" id="p_note"></textarea>
+      <div class="divider"></div>
+      <div class="grid3">
+        <div class="fg"><label>Penale ON SITE</label><input type="text" id="p_pen_os" value="€ 40 per il 100% degli oltre 25% non presentati"></div>
+        <div class="fg"><label>Penale c/o studio</label><input type="text" id="p_pen_st" value="100% visita per ogni lavoratore non presentato"></div>
+        <div class="fg"><label>Disdetta</label><input type="text" id="p_disdetta" value="90 giorni"></div>
+        <div class="fg"><label>Fatturazione</label><input type="text" id="p_fatt" value="Fine mese"></div>
+        <div class="fg"><label>Pagamento</label><input type="text" id="p_pag" value="30 GG DF"></div>
+        <div class="fg"><label>Area competenza</label><input type="text" id="p_area" placeholder="es. Nazionale"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="goPage(0)">← Indietro</button>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-gold" onclick="showPreview()">👁 Anteprima</button>
+      <button class="btn btn-green" onclick="generatePDF()">⬇ Scarica PDF</button>
+      <button class="btn btn-blue" onclick="sendToCRM()" id="btnCRM" style="background:#0047ab">📤 Invia al CRM</button>
+    </div>
+  </div>
+
+</div><!-- /pg1 -->
+
+</div><!-- /wrap -->
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let listino   = {};   // {cat:[{nome,um,prezzoOS,prezzoST,scontoOS,scontoST,qty,sel,incluso,custom,per}]}
+let mansioni  = [];   // [{nome,n,per,accertamenti:[],aiSuggested}]
+let sedi      = [];   // [{citta,rows:[{mansione,n}]}]
+let docText   = '';
+let docFile   = null;
+
+// ═══════════════════════════════════════
+// DEFAULT LISTINO
+// ═══════════════════════════════════════
+const DEFAULT_LISTINO = {
+  "Incarico Medico Competente":[
+    {nome:"Incarico Medico Competente Coordinatore", um:"€/cad.", prezzoOS:800,  prezzoST:800},
+    {nome:"Incarico Medico Competente Coordinato",   um:"€/cad.", prezzoOS:290,  prezzoST:290},
+  ],
+  "Servizi Generali":[
+    {nome:"Sopralluogo Medico Competente",                        um:"€/cad.", prezzoOS:180,  prezzoST:180},
+    {nome:"Partecipazione MC a riunioni periodiche",              um:"€/ora",  prezzoOS:100,  prezzoST:100},
+    {nome:"Partecipazione MC a riunioni enti di controllo",       um:"€/ora",  prezzoOS:100,  prezzoST:100},
+    {nome:"Invio Allegato 3B annuale",                            um:"€/anno", prezzoOS:0,    prezzoST:0,   incluso:true},
+    {nome:"Cartella Sanitaria Digitalizzata",                     um:"€/lav.", prezzoOS:1.50, prezzoST:1.50},
+  ],
+  "Diritti di Uscita":[
+    {nome:"Diritto uscita medico c/o azienda (min. 15 persone)", um:"€/die",  prezzoOS:90,   prezzoST:90},
+    {nome:"Clinica mobile",                                       um:"€/die",  prezzoOS:0,    prezzoST:0,   custom:true},
+    {nome:"Rimborso km trasferta camper",                         um:"km ACI", prezzoOS:0,    prezzoST:0,   custom:true},
+  ],
+  "Visite Mediche":[
+    {nome:"Visita medica periodica ON SITE (gruppi ≥ 15 lav.)",  um:"€/cad.", prezzoOS:42,   prezzoST:null},
+    {nome:"Visita medica periodica c/o Studio Medico",            um:"€/cad.", prezzoOS:null, prezzoST:48},
+    {nome:"Visita medica preventiva (entro 5 gg)",                um:"€/cad.", prezzoOS:48,   prezzoST:48},
+    {nome:"Visita medica di rientro (entro 5 gg)",                um:"€/cad.", prezzoOS:48,   prezzoST:48},
+    {nome:"Visita medica straordinaria",                          um:"€/cad.", prezzoOS:48,   prezzoST:48},
+    {nome:"Certificati medici su richiesta",                      um:"€/cad.", prezzoOS:45,   prezzoST:48},
+  ],
+  "Accertamenti Singoli":[
+    {nome:"Visio Test",                          um:"€/cad.", prezzoOS:30,  prezzoST:35},
+    {nome:"ECG (elettrocardiogramma)",           um:"€/cad.", prezzoOS:25,  prezzoST:32},
+    {nome:"Spirometria",                         um:"€/cad.", prezzoOS:20,  prezzoST:27},
+    {nome:"Audiometria",                         um:"€/cad.", prezzoOS:25,  prezzoST:32},
+    {nome:"Alcool Test",                         um:"€/cad.", prezzoOS:20,  prezzoST:27},
+    {nome:"Drug Test",                           um:"€/cad.", prezzoOS:35,  prezzoST:50},
+    {nome:"Protocolli Arti Superiori",           um:"€/cad.", prezzoOS:15,  prezzoST:18},
+    {nome:"Valutazione Rachide",                 um:"€/cad.", prezzoOS:8,   prezzoST:10},
+    {nome:"Esami di laboratorio (pacchetto)",    um:"€/cad.", prezzoOS:45,  prezzoST:45},
+    {nome:"Questionario osteo-articolare",       um:"€/cad.", prezzoOS:5,   prezzoST:7},
+    {nome:"Sierologia (Tetano/HBs/HAV)",         um:"€/cad.", prezzoOS:20,  prezzoST:23},
+    {nome:"AUDIT (alcool)",                      um:"€/cad.", prezzoOS:10,  prezzoST:12},
+  ],
+  "Pacchetti per Mansione":[
+    {nome:"Addetto pulizie (ECG+Spiro+Arti Sup.+Quest.)",           um:"€/cad.", prezzoOS:85,  prezzoST:102, per:"12 mesi"},
+    {nome:"Facchino (ECG+Spiro+AUDIT+Arti Sup.+Quest.)",            um:"€/cad.", prezzoOS:85,  prezzoST:102, per:"12 mesi"},
+    {nome:"Receptionist/VDT (VisioTest+Arti Sup.+Rachide)",         um:"€/cad.", prezzoOS:70,  prezzoST:85,  per:"24 mesi"},
+    {nome:"Autista/Autospurghista (Visita+Esami+Spiro+Drug Test)",   um:"€/cad.", prezzoOS:135, prezzoST:155, per:"Annuale"},
+    {nome:"Magazziniere (Visita+Esami+Spiro+Drug Test)",             um:"€/cad.", prezzoOS:135, prezzoST:155, per:"Annuale"},
+    {nome:"Impiegato VDT (Visita+Rachide+VisioTest)",                um:"€/cad.", prezzoOS:75,  prezzoST:85,  per:"Biennale"},
+    {nome:"Audiometria magazziniere (biennale)",                     um:"€/cad.", prezzoOS:25,  prezzoST:32,  per:"24 mesi"},
+  ],
+};
+
+function initListino(){
+  listino={};
+  for(const[cat,voci] of Object.entries(DEFAULT_LISTINO)){
+    listino[cat]=voci.map(v=>({...v,scontoOS:0,scontoST:0,qty:1,sel:false}));
+  }
+}
+
+// ═══════════════════════════════════════
+
+// ═══════════════════════════════════════
+// PAGER
+// ═══════════════════════════════════════
+function goPage(n){
+  document.querySelectorAll('.page').forEach((el,i)=>el.classList.toggle('active',i===n));
+  document.querySelectorAll('.pager-tab').forEach((el,i)=>{
+    el.classList.remove('active','done');
+    if(i===n)el.classList.add('active');
+    else if(i<n)el.classList.add('done');
+  });
+}
+
+// ═══════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════
+function dzOver(e,id){e.preventDefault();document.getElementById(id).classList.add('over')}
+function dzOut(e,id){document.getElementById(id).classList.remove('over')}
+function dzDrop(e){
+  e.preventDefault();
+  document.getElementById('docZone').classList.remove('over');
+  if(e.dataTransfer.files[0])loadDoc(e.dataTransfer.files[0]);
+}
+
+// ═══════════════════════════════════════
+// LISTINO LOADING
+// ═══════════════════════════════════════
+function loadListino(file){
+  if(!file)return;
+  document.getElementById('listinoStatus').textContent='⏳ Caricamento...';
+  const ext=file.name.split('.').pop().toLowerCase();
+  const r=new FileReader();
+  const parse=(rows)=>{
+    const headers=rows[0].map(h=>String(h).trim().toLowerCase());
+    const fc=c=>headers.findIndex(h=>c.some(x=>h.includes(x)));
+    const iN=fc(['servizio','nome','descrizione']);
+    const iC=fc(['categoria','cat','gruppo']);
+    const iO=fc(['on site','onsite','os','prezzo os']);
+    const iS=fc(['studio','st','prezzo st']);
+    const iU=fc(['um','unità','misura']);
+    listino={};
+    rows.slice(1).filter(r=>r[iN]&&String(r[iN]).trim()).forEach(r=>{
+      const cat=iC>=0?String(r[iC]||'').trim():'Servizi';
+      if(!listino[cat])listino[cat]=[];
+      listino[cat].push({
+        nome:String(r[iN]).trim(),
+        um:iU>=0?String(r[iU]||'€/cad.').trim():'€/cad.',
+        prezzoOS:parseFloat(String(r[iO]||0).replace(',','.'))||0,
+        prezzoST:parseFloat(String(r[iS]||0).replace(',','.'))||0,
+        scontoOS:0,scontoST:0,qty:1,sel:false
+      });
+    });
+    document.getElementById('listinoStatus').textContent=`✅ ${file.name}`;
+    flash(`📊 Listino caricato: ${file.name}`,'ok','pg0');
+  };
+  if(ext==='csv'){r.onload=e=>{const l=e.target.result.split('\n').filter(x=>x.trim());const sep=l[0].includes(';')?';':',';parse(l.map(x=>x.split(sep)));};r.readAsText(file);}
+  else{r.onload=e=>{const wb=XLSX.read(e.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];parse(XLSX.utils.sheet_to_json(ws,{header:1,defval:''}));};r.readAsBinaryString(file);}
+}
+
+// ═══════════════════════════════════════
+// DOCUMENT LOAD
+// ═══════════════════════════════════════
+function loadDoc(file){
+  if(!file)return;
+  docFile=file;
+  document.getElementById('docFname').innerHTML=`<div class="file-pill">📎 ${file.name}</div>`;
+  document.getElementById('extractBtn').disabled=false;
+  const r=new FileReader();
+  if(file.name.endsWith('.pdf')){r.onload=e=>docText=e.target.result;r.readAsDataURL(file);}
+  else{r.onload=e=>docText=e.target.result;r.readAsText(file);}
+}
+function clearDoc(){
+  docFile=null;docText='';
+  document.getElementById('docFile').value='';
+  document.getElementById('docFname').innerHTML='';
+  document.getElementById('extractBtn').disabled=true;
+}
+
+// ═══════════════════════════════════════
+// AI EXTRACT
+// ═══════════════════════════════════════
+async function extractDoc(){
+  if(!docText)return alert('Carica prima un documento.');
+  showLoader('Estrazione dati con Gemini AI...');
+  const prompt=`Analizza questo documento (email o lettera di richiesta preventivo) ed estrai le informazioni presenti.
+Restituisci ESCLUSIVAMENTE un oggetto JSON valido, senza testo prima o dopo, senza backtick, senza markdown.
+Estrai tutto quello che trovi: nome azienda, email, telefono, sede, referente, servizi richiesti come mansioni.
+Se ci sono piu sedi indicale tutte. Se non trovi un campo lascialo vuoto/0/false.
+
+Formato JSON da restituire:
+{"ragione_sociale":"","piva":"","sede":"","referente":"","email":"","tel":"","ateco":"","n_lavoratori":0,
+"multisede":false,
+"sedi":[{"citta":"","mansioni":[{"nome":"","n":1}]}],
+"mansioni":[{"nome":"","n":1,"periodicita":"12 mesi"}]}`;
+  try{
+    const isPDF = docText.startsWith('data:application/pdf');
+    const txt=await callAI(prompt, isPDF?docText.split(',')[1]:null, isPDF?null:docText.substring(0,9000));
+    console.log('Gemini response:', txt);
+    const cleaned = txt.replace(/```json|```/g,'').trim();
+    const jsonStart = cleaned.indexOf('{');
+    const jsonEnd = cleaned.lastIndexOf('}');
+    if(jsonStart===-1||jsonEnd===-1) throw new Error('Nessun JSON trovato nella risposta AI');
+    const d=JSON.parse(cleaned.substring(jsonStart, jsonEnd+1));
+    if(d.ragione_sociale)V('c_rag').value=d.ragione_sociale;
+    if(d.piva)V('c_piva').value=d.piva;
+    if(d.sede)V('c_sede').value=d.sede;
+    if(d.referente)V('c_ref').value=d.referente;
+    if(d.email)V('c_email').value=d.email;
+    if(d.tel)V('c_tel').value=d.tel;
+    if(d.ateco)V('c_ateco').value=d.ateco;
+    if(d.n_lavoratori)V('c_nlav').value=d.n_lavoratori;
+    if(d.mansioni?.length){
+      d.mansioni.forEach(m=>{
+        if(m.nome&&!mansioni.find(x=>x.nome.toLowerCase()===m.nome.toLowerCase()))
+          mansioni.push({nome:m.nome,n:m.n||1,per:m.periodicita||'12 mesi',accertamenti:[],aiSuggested:false});
+      });
+      renderMans();
+    }
+    if(d.multisede||d.sedi?.length>1){
+      V('isMultisede').checked=true;toggleMultisede();
+      if(d.sedi?.length){
+        sedi=d.sedi.map(s=>({citta:s.citta||'',rows:s.mansioni?.map(m=>({mansione:m.nome,n:m.n||1}))||[]}));
+        renderSedi();
+      }
+    }
+    hideLoader();
+    flash('✅ Dati estratti. Controlla e integra dove necessario.','ok','pg0');
+  }catch(e){hideLoader();flash('❌ Errore: '+e.message,'err','pg0');}
+}
+
+async function analyzeAI(){
+  if(!mansioni.length)return alert('Inserisci prima almeno una mansione.');
+  showLoader('Analisi D.Lgs 81/2008 con Gemini AI...');
+  const settore=V('c_ateco').value||'non specificato';
+  const ms=mansioni.map(m=>m.nome).join(', ');
+  try{
+    const txt=await callAI(`Sei un esperto di medicina del lavoro italiana (D.Lgs 81/2008, protocolli INAIL).
+Per le mansioni "${ms}" nel settore "${settore}", indica accertamenti sanitari obbligatori/consigliati e periodicità.
+Rispondi SOLO con JSON valido (nessun testo o backtick):
+{"mansioni":[{"nome":"","accertamenti":[""],"periodicita":"12 mesi"}]}`);
+    const d=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    d.mansioni.forEach(m=>{
+      const f=mansioni.find(x=>x.nome.toLowerCase().includes(m.nome.toLowerCase())||m.nome.toLowerCase().includes(x.nome.toLowerCase()));
+      if(f){f.accertamenti=m.accertamenti;f.aiSuggested=true;if(m.periodicita)f.per=m.periodicita;}
+    });
+    hideLoader();renderMans();
+    flash('✅ Accertamenti suggeriti da AI · ⚠️ Verifica sempre con il DVR aziendale','warn','pg0');
+  }catch(e){hideLoader();flash('❌ Errore AI: '+e.message,'err','pg0');}
+}
+
+// ═══════════════════════════════════════
+// MANSIONI
+// ═══════════════════════════════════════
+function addMans(){
+  const nome=V('newMansNome').value.trim();
+  if(!nome)return;
+  if(!mansioni.find(m=>m.nome.toLowerCase()===nome.toLowerCase()))
+    mansioni.push({nome,n:parseInt(V('newMansN').value)||1,per:V('newMansPer').value,accertamenti:[],aiSuggested:false});
+  V('newMansNome').value='';
+  renderMans();
+}
+function renderMans(){
+  const el=document.getElementById('mansList');
+  if(!mansioni.length){
+    el.innerHTML='<div class="alert alert-info">Nessuna mansione. Carica un documento o inserisci manualmente.</div>';return;
+  }
+  el.innerHTML=mansioni.map((m,i)=>`
+    <div class="mans-card">
+      <div class="mans-card-top">
+        <div>
+          <div class="mans-name">👤 ${m.nome}</div>
+          <div class="mans-meta">${m.n} lavorator${m.n===1?'e':'i'} &nbsp;·&nbsp; Periodicità: ${m.per}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" value="${m.n}" min="1"
+            style="width:60px;padding:5px 8px;font-size:13px;border:1.5px solid var(--border);border-radius:6px;font-family:'Sora',sans-serif"
+            onchange="mansioni[${i}].n=parseInt(this.value)||1;renderMans()">
+          <button class="btn-icon" onclick="mansioni.splice(${i},1);renderMans()" title="Rimuovi">✕</button>
+        </div>
+      </div>
+      ${m.accertamenti.length?`
+        <div class="mans-acc">
+          ${m.accertamenti.map(a=>`<span class="chip ${m.aiSuggested?'chip-gold':'chip-blue'}">${a}</span>`).join('')}
+        </div>
+        ${m.aiSuggested?'<div class="acc-warn">⚠️ Accertamenti suggeriti da AI · Potrebbero non essere completi senza DVR aziendale</div>':''}
+      `:`<div class="mans-acc"><span class="chip chip-gray">Nessun accertamento · usa 🤖 Analizza con AI</span></div>`}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// SEDI
+// ═══════════════════════════════════════
+function toggleMultisede(){
+  const on=document.getElementById('isMultisede').checked;
+  document.getElementById('sediBlock').style.display=on?'block':'none';
+  if(on&&!sedi.length)addSede();
+}
+function addSede(){
+  sedi.push({citta:'',rows:mansioni.map(m=>({mansione:m.nome,n:m.n}))});
+  renderSedi();
+}
+function renderSedi(){
+  const el=document.getElementById('sediList');
+  if(!sedi.length){el.innerHTML='';return;}
+  el.innerHTML=sedi.map((s,si)=>`
+    <div class="sede-block">
+      <div class="sede-header">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="fg"><label>Città / Sede</label>
+            <input type="text" value="${s.citta}" placeholder="es. Roma"
+              style="width:160px" onchange="sedi[${si}].citta=this.value">
+          </div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:18px">
+            Tot. lavoratori: <strong>${s.rows.reduce((a,r)=>a+r.n,0)}</strong>
+          </div>
+        </div>
+        <button class="btn-icon" onclick="sedi.splice(${si},1);renderSedi()">✕</button>
+      </div>
+      <div class="sede-mansioni">
+        ${s.rows.map((r,ri)=>`
+          <div style="display:flex;align-items:center;gap:7px;background:var(--white);border:1px solid var(--border);border-radius:6px;padding:6px 12px">
+            <span style="font-size:12px;font-weight:500">${r.mansione||'—'}</span>
+            <input type="number" value="${r.n}" min="0"
+              style="width:52px;padding:4px 7px;font-size:12px;border:1.5px solid var(--border);border-radius:5px;font-family:'Sora',sans-serif"
+              onchange="sedi[${si}].rows[${ri}].n=parseInt(this.value)||0;renderSedi()">
+          </div>
+        `).join('')}
+        <button class="btn btn-ghost btn-sm" onclick="sedi[${si}].rows.push({mansione:'',n:1});renderSedi()">+ mansione</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// PRICE PAGE BUILDER
+// ═══════════════════════════════════════
+function buildPricePage(){
+  const el=document.getElementById('priceContent');
+  el.innerHTML='';
+
+  // ── Sezione ACCERTAMENTI IN EVIDENZA ──
+  const accAll=[];
+  mansioni.forEach(m=>m.accertamenti.forEach(a=>{if(!accAll.find(x=>x===a))accAll.push(a);}));
+
+  if(mansioni.length){
+    const sec=makeSectionBlock('⚕️','Accertamenti per mansione','Riepilogo degli accertamenti rilevati — abbina i costi dal listino');
+    const table=document.createElement('div');
+    table.innerHTML=`
+      <div class="scroll-x">
+        <table class="ptable">
+          <thead><tr>
+            <th>Mansione</th>
+            <th>Periodicità</th>
+            <th class="nc">Lavoratori</th>
+            <th>Accertamenti</th>
+          </tr></thead>
+          <tbody>
+            ${mansioni.map(m=>`
+              <tr>
+                <td><strong>${m.nome}</strong></td>
+                <td>${m.per}</td>
+                <td class="nc">${m.n}</td>
+                <td>${m.accertamenti.length
+                  ? m.accertamenti.map(a=>`<span class="chip chip-blue" style="margin:2px">${a}</span>`).join('')
+                  : '<span class="chip chip-gray">—</span>'}
+                  ${m.aiSuggested?'<span class="tag-ai" style="margin-left:6px">🤖 AI</span>':''}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    sec.querySelector('.block-body').appendChild(table);
+    el.appendChild(sec);
+  }
+
+  // ── Sezione LISTINO per categoria ──
+  const sec2=makeSectionBlock('💶','Listino prezzi & Sconti','Seleziona le voci da includere · modifica prezzi netti o sconto %');
+  const listinoWrap=document.createElement('div');
+
+  for(const[cat,voci] of Object.entries(listino)){
+    const grp=document.createElement('div');
+    grp.innerHTML=`
+      <div class="section-divider">
+        <input type="checkbox" onchange="selCat('${cat}',this.checked)" style="width:15px;height:15px;cursor:pointer;margin-right:4px">
+        ${cat}
+      </div>
+      <div class="scroll-x">
+        <table class="ptable" id="tbl_${cat.replace(/\s/g,'_')}">
+          <thead>
+            <tr>
+              <th style="width:28px"></th>
+              <th>Servizio / Accertamento</th>
+              <th style="width:38px">U.M.</th>
+              <th style="width:74px">€ OS Listino</th>
+              <th style="width:66px">Sc. OS%</th>
+              <th style="width:78px;background:#1a5e35">✏️ Netto OS</th>
+              <th class="green-h" style="width:74px">€ ST Listino</th>
+              <th class="green-h" style="width:66px">Sc. ST%</th>
+              <th style="width:78px;background:#1a5e35">✏️ Netto ST</th>
+              <th style="width:50px">Qtà</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${voci.map((v,vi)=>{
+              const ci=Object.keys(listino).indexOf(cat);
+              const dis=v.incluso||v.custom;
+              const nOS=v.prezzoOS?+(v.prezzoOS*(1-v.scontoOS/100)).toFixed(2):null;
+              const nST=v.prezzoST?+(v.prezzoST*(1-v.scontoST/100)).toFixed(2):null;
+              return `
+              <tr class="${v.sel?'sel':''}" id="row_${ci}_${vi}">
+                <td><input type="checkbox" ${v.sel?'checked':''} onchange="togVoce(${ci},${vi},this.checked)" style="width:15px;height:15px;cursor:pointer"></td>
+                <td>${v.nome}${v.per?` <span class="chip chip-green" style="margin-left:6px">${v.per}</span>`:''}</td>
+                <td style="font-size:11px;color:var(--ink3)">${v.um}</td>
+                ${dis?`<td colspan="6" style="text-align:center"><span class="chip ${v.incluso?'chip-green':'chip-gray'}">${v.incluso?'Incluso':'Su richiesta'}</span></td>`:`
+                <td class="nr price-ref">${v.prezzoOS?'€ '+v.prezzoOS.toFixed(2):'—'}</td>
+                <td>${v.prezzoOS?`<input class="pct-input" type="number" id="scOS_${ci}_${vi}" value="${v.scontoOS}" min="0" max="100" step="0.1" onchange="fromScOS(${ci},${vi},this.value)">` :'—'}</td>
+                <td style="background:var(--green-bg)">${v.prezzoOS?`<input class="net-input" type="number" id="nOS_${ci}_${vi}" value="${nOS}" min="0" step="0.01" onchange="fromNOS(${ci},${vi},this.value)">` :'—'}</td>
+                <td class="nr price-ref">${v.prezzoST?'€ '+v.prezzoST.toFixed(2):'—'}</td>
+                <td>${v.prezzoST?`<input class="pct-input" type="number" id="scST_${ci}_${vi}" value="${v.scontoST}" min="0" max="100" step="0.1" onchange="fromScST(${ci},${vi},this.value)">` :'—'}</td>
+                <td style="background:var(--green-bg)">${v.prezzoST?`<input class="net-input" type="number" id="nST_${ci}_${vi}" value="${nST}" min="0" step="0.01" onchange="fromNST(${ci},${vi},this.value)">` :'—'}</td>`}
+                <td><input class="qty-input" type="number" id="qty_${ci}_${vi}" value="${v.qty}" min="1" onchange="setQty(${ci},${vi},this.value)"></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    listinoWrap.appendChild(grp);
+  }
+  sec2.querySelector('.block-body').appendChild(listinoWrap);
+  el.appendChild(sec2);
+  calcTotale();
+}
+
+function makeSectionBlock(ico,title,sub){
+  const d=document.createElement('div');
+  d.className='block';
+  d.style.marginBottom='20px';
+  d.innerHTML=`
+    <div class="block-head">
+      <span class="ico">${ico}</span>
+      <div><h2>${title}</h2>${sub?`<div class="sub">${sub}</div>`:''}</div>
+    </div>
+    <div class="block-body"></div>`;
+  return d;
+}
+
+// Bidirectional price/discount
+function getV(ci,vi){return Object.values(listino)[ci][vi]}
+function fromScOS(ci,vi,val){const v=getV(ci,vi);v.scontoOS=clamp(parseFloat(val)||0);const el=document.getElementById(`nOS_${ci}_${vi}`);if(el&&v.prezzoOS)el.value=+(v.prezzoOS*(1-v.scontoOS/100)).toFixed(2);calcTotale()}
+function fromNOS(ci,vi,val){const v=getV(ci,vi);if(!v.prezzoOS)return;const n=parseFloat(val)||0;v.scontoOS=clamp(+((1-n/v.prezzoOS)*100).toFixed(2));const el=document.getElementById(`scOS_${ci}_${vi}`);if(el)el.value=v.scontoOS;calcTotale()}
+function fromScST(ci,vi,val){const v=getV(ci,vi);v.scontoST=clamp(parseFloat(val)||0);const el=document.getElementById(`nST_${ci}_${vi}`);if(el&&v.prezzoST)el.value=+(v.prezzoST*(1-v.scontoST/100)).toFixed(2);calcTotale()}
+function fromNST(ci,vi,val){const v=getV(ci,vi);if(!v.prezzoST)return;const n=parseFloat(val)||0;v.scontoST=clamp(+((1-n/v.prezzoST)*100).toFixed(2));const el=document.getElementById(`scST_${ci}_${vi}`);if(el)el.value=v.scontoST;calcTotale()}
+function setQty(ci,vi,val){getV(ci,vi).qty=Math.max(1,parseInt(val)||1);calcTotale()}
+function clamp(n){return Math.min(100,Math.max(0,n))}
+function togVoce(ci,vi,checked){
+  getV(ci,vi).sel=checked;
+  const r=document.getElementById(`row_${ci}_${vi}`);if(r)r.className=checked?'sel':'';
+  calcTotale();
+}
+function selCat(cat,checked){
+  const ci=Object.keys(listino).indexOf(cat);
+  listino[cat].forEach((v,vi)=>{v.sel=checked;const r=document.getElementById(`row_${ci}_${vi}`);if(r)r.className=checked?'sel':'';});
+  calcTotale();
+}
+
+function calcTotale(){
+  let lordo=0,netto=0,voci=0;
+  for(const vl of Object.values(listino)){
+    vl.filter(v=>v.sel&&!v.incluso&&!v.custom).forEach(v=>{
+      const p=(v.prezzoOS||v.prezzoST||0)*v.qty;
+      const sc=v.prezzoOS?v.scontoOS:v.scontoST;
+      lordo+=p;netto+=p*(1-sc/100);voci++;
+    });
+  }
+  const nLav=mansioni.reduce((a,m)=>a+m.n,0)||parseInt(V('c_nlav').value)||0;
+  V('tLav').textContent=nLav;
+  V('tVoci').textContent=voci;
+  V('tLordo').textContent='€ '+lordo.toFixed(2);
+  V('tSconto').textContent='€ '+(lordo-netto).toFixed(2);
+  V('tNetto').textContent='€ '+netto.toFixed(2);
+}
+
+// ═══════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════
+function showPreview(){
+  const rag=V('c_rag').value||'—';
+  const pNum=V('p_num').value||'DC-001';
+  const pData=V('p_data').value;
+  const tipo=V('p_tipo').value;
+  const scelti=Object.values(listino).flat().filter(v=>v.sel);
+  let html=`
+    <div style="max-width:700px;margin:0 auto;font-family:'Sora',sans-serif">
+      <div style="text-align:right;color:#666;font-size:12px;margin-bottom:16px">${V('p_citta').value||'Milano'}, ${fmtDate(pData)}</div>
+      <p style="margin-bottom:16px"><strong>Spett.le</strong><br><strong style="font-size:15px">${rag}</strong><br><span style="color:#666">${V('c_sede').value||''}</span></p>
+      <div style="text-align:center;margin:24px 0">
+        <div style="font-size:18px;font-weight:700;color:#0047ab;text-transform:uppercase">Offerta Tecnico–Economica ${new Date().getFullYear()}</div>
+        <div style="font-size:13px;color:#666;margin-top:4px">${tipo}</div>
+        <div style="font-size:12px;color:#999;margin-top:2px">Rif. ${pNum} &nbsp;·&nbsp; Validità ${V('p_val').value||30} giorni</div>
+      </div>
+      <hr style="border:none;border-top:2px solid #0047ab;margin:20px 0">`;
+
+  // Mansioni
+  if(mansioni.length){
+    html+=`<h3 style="font-size:13px;font-weight:700;color:#0047ab;text-transform:uppercase;margin-bottom:10px">Mansioni & Accertamenti</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px">
+    <thead><tr style="background:#0047ab;color:#fff">
+      <th style="padding:7px 10px;text-align:left">Mansione</th>
+      <th style="padding:7px 10px;text-align:center">Periodicità</th>
+      <th style="padding:7px 10px;text-align:center">Lav.</th>
+      <th style="padding:7px 10px;text-align:left">Accertamenti</th>
+    </tr></thead><tbody>
+    ${mansioni.map((m,i)=>`
+      <tr style="background:${i%2?'#f8fafc':'#fff'};border-bottom:1px solid #e2e8f0">
+        <td style="padding:7px 10px"><strong>${m.nome}</strong></td>
+        <td style="padding:7px 10px;text-align:center">${m.per}</td>
+        <td style="padding:7px 10px;text-align:center">${m.n}</td>
+        <td style="padding:7px 10px">${m.accertamenti.join(', ')||'—'}${m.aiSuggested?' <em style="color:#b45309;font-size:10px">(AI)</em>':''}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  // Offerta economica
+  if(scelti.length){
+    const groups={};
+    Object.entries(listino).forEach(([cat,voci])=>voci.filter(v=>v.sel).forEach(v=>{
+      if(!groups[cat])groups[cat]=[];groups[cat].push(v);
+    }));
+    let totNetto=0;
+    html+=`<h3 style="font-size:13px;font-weight:700;color:#0047ab;text-transform:uppercase;margin-bottom:10px">Offerta Economica</h3>`;
+    for(const[cat,voci] of Object.entries(groups)){
+      html+=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#475569;margin:14px 0 6px;letter-spacing:.06em">${cat}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">
+      <thead><tr style="background:#f1f5f9">
+        <th style="padding:6px 8px;text-align:left;font-weight:600">Servizio</th>
+        <th style="padding:6px 8px;text-align:center;font-weight:600">Qtà</th>
+        <th style="padding:6px 8px;text-align:right;font-weight:600">€ ON SITE</th>
+        <th style="padding:6px 8px;text-align:right;font-weight:600">€ Studio</th>
+      </tr></thead><tbody>
+      ${voci.map(v=>{
+        const nOS=v.incluso?null:v.custom?null:v.prezzoOS?+(v.prezzoOS*(1-v.scontoOS/100)).toFixed(2):null;
+        const nST=v.incluso?null:v.custom?null:v.prezzoST?+(v.prezzoST*(1-v.scontoST/100)).toFixed(2):null;
+        if(nOS)totNetto+=nOS*v.qty; else if(nST)totNetto+=nST*v.qty;
+        return`<tr style="border-bottom:1px solid #e2e8f0">
+          <td style="padding:6px 8px">${v.nome}${v.per?` <span style="font-size:10px;color:#1a6b3a">[${v.per}]</span>`:''}</td>
+          <td style="padding:6px 8px;text-align:center">${v.qty}</td>
+          <td style="padding:6px 8px;text-align:right">${v.incluso?'Incluso':v.custom?'Su richiesta':nOS?'<strong>€ '+nOS.toFixed(2)+'</strong>':'—'}</td>
+          <td style="padding:6px 8px;text-align:right">${v.incluso?'':v.custom?'':nST?'€ '+nST.toFixed(2):'—'}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>`;
+    }
+    html+=`<div style="background:#0047ab;color:#fff;border-radius:8px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+      <span style="font-weight:600">TOTALE NETTO (IVA ESCLUSA)</span>
+      <span style="font-size:20px;font-weight:700;color:#fde68a">€ ${totNetto.toFixed(2)}</span>
+    </div>`;
+  }
+
+  // Note
+  const note=V('p_note').value;
+  if(note){html+=`<div style="margin-top:20px;font-size:11.5px;color:#475569;line-height:1.7">${note.replace(/\n/g,'<br>')}</div>`;}
+
+  // Firme
+  html+=`<div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div style="border:1px solid #cbd5e1;border-radius:8px;padding:16px">
+      <div style="font-weight:700;font-size:12px;margin-bottom:10px">DELIVERY CARE S.r.l – S.B.</div>
+      <div style="font-size:11px;color:#666">Per accettazione</div>
+      <div style="margin-top:30px;border-top:1px solid #ccc;padding-top:6px;font-size:11px;color:#999">Firma e timbro</div>
+    </div>
+    <div style="border:1px solid #cbd5e1;border-radius:8px;padding:16px">
+      <div style="font-weight:700;font-size:12px;margin-bottom:10px">${rag.toUpperCase()}</div>
+      <div style="font-size:11px;color:#666">Per accettazione</div>
+      <div style="margin-top:30px;border-top:1px solid #ccc;padding-top:6px;font-size:11px;color:#999">Luogo, data e firma</div>
+    </div>
+  </div></div>`;
+
+  document.getElementById('prevBody').innerHTML=html;
+  document.getElementById('prevModal').classList.add('open');
+}
+function closePrev(){document.getElementById('prevModal').classList.remove('open')}
+
+// ═══════════════════════════════════════
+// PDF
+// ═══════════════════════════════════════
+function generatePDF(){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const B=[0,71,171],G=[26,107,58],GD=[212,136,12],GR=[71,85,104],LB=[238,244,253],W=[255,255,255],BK=[13,27,42];
+  const PW=210,PH=297,ML=14,MR=14;let y=0;
+
+  const newPage=()=>{doc.addPage();y=18;};
+  const sh=(title,yy)=>{
+    doc.setFillColor(...LB);doc.rect(ML,yy,PW-ML-MR,7.5,'F');
+    doc.setFillColor(...B);doc.rect(ML,yy,3.5,7.5,'F');
+    doc.setTextColor(...B);doc.setFont('helvetica','bold');doc.setFontSize(9);
+    doc.text(title,ML+7,yy+5.3);
+    return yy+10;
+  };
+
+  // HEADER
+  doc.setFillColor(...B);doc.rect(0,0,PW,40,'F');
+  doc.setFillColor(...GD);doc.roundedRect(ML,7,22,22,3,3,'F');
+  doc.setTextColor(...W);doc.setFont('helvetica','bold');doc.setFontSize(12);
+  doc.text('DC',ML+11,20.5,{align:'center'});
+  doc.setFontSize(16);doc.text('DELIVERY CARE SRL',ML+28,15);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(190,215,245);
+  doc.text('Società Benefit · Medicina del Lavoro e Sicurezza sul Lavoro',ML+28,21);
+  doc.text('info@deliverycare.it  ·  www.deliverycare.it',ML+28,27);
+  doc.setFillColor(...GD);doc.rect(PW-MR-52,7,52,16,'F');
+  doc.setTextColor(...W);doc.setFont('helvetica','bold');doc.setFontSize(10);
+  doc.text('OFFERTA',PW-MR-26,14,{align:'center'});
+  doc.setFontSize(8);doc.text(V('p_num').value||'DC-001',PW-MR-26,19.5,{align:'center'});
+  y=48;
+
+  // INTESTAZIONE CLIENTE
+  const rag=V('c_rag').value||'—';
+  const pData=V('p_data').value;
+  doc.setTextColor(...BK);doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.text('Spett.le',ML,y);y+=5;
+  doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text(rag,ML,y);y+=5;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...GR);
+  if(V('c_sede').value){doc.text(V('c_sede').value,ML,y);y+=5;}
+  doc.text((V('p_citta').value||'Milano')+', '+fmtDate(pData),PW-MR,y-5,{align:'right'});
+  y+=6;
+  doc.setTextColor(...B);doc.setFont('helvetica','bold');doc.setFontSize(13);
+  doc.text(('OFFERTA TECNICO–ECONOMICA '+new Date().getFullYear()).toUpperCase(),PW/2,y,{align:'center'});y+=6;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...GR);
+  doc.text(V('p_tipo').value,PW/2,y,{align:'center'});y+=4;
+  doc.text('Validità: '+V('p_val').value+' giorni  ·  Redatto da: '+(V('p_redattore').value||'—'),PW/2,y,{align:'center'});
+  y+=8;doc.setDrawColor(...B);doc.setLineWidth(.5);doc.line(ML,y,PW-MR,y);y+=8;
+
+  // MANSIONI
+  if(mansioni.length){
+    if(y>PH-60)newPage();
+    y=sh('MANSIONI E ACCERTAMENTI SANITARI',y);
+    doc.autoTable({startY:y,
+      head:[['Mansione','Periodicità','N° Lav.','Accertamenti']],
+      body:mansioni.map(m=>[m.nome,m.per,m.n,m.accertamenti.join(', ')||'—'+(m.aiSuggested?' (AI)':'')]),
+      theme:'grid',
+      headStyles:{fillColor:B,textColor:W,fontSize:7.5,fontStyle:'bold',cellPadding:3},
+      bodyStyles:{fontSize:8,textColor:BK,cellPadding:3},
+      alternateRowStyles:{fillColor:[248,251,255]},
+      columnStyles:{0:{cellWidth:42},1:{cellWidth:22,halign:'center'},2:{cellWidth:14,halign:'center'},3:{cellWidth:100}},
+      margin:{left:ML,right:MR}});
+    y=doc.lastAutoTable.finalY+6;
+  }
+
+  // OFFERTA ECONOMICA
+  const groups={};
+  Object.entries(listino).forEach(([cat,voci])=>voci.filter(v=>v.sel).forEach(v=>{
+    if(!groups[cat])groups[cat]=[];groups[cat].push(v);
+  }));
+  if(Object.keys(groups).length){
+    if(y>PH-60)newPage();
+    y=sh('OFFERTA ECONOMICA',y);
+    let totL=0,totN=0;
+    for(const[cat,voci] of Object.entries(groups)){
+      if(y>PH-50)newPage();
+      doc.setFillColor(220,232,248);doc.rect(ML,y,PW-ML-MR,6,'F');
+      doc.setTextColor(...B);doc.setFont('helvetica','bold');doc.setFontSize(8);
+      doc.text(cat.toUpperCase(),ML+4,y+4.2);y+=8;
+      const rows=voci.map(v=>{
+        const nOS=v.incluso?null:v.custom?null:v.prezzoOS?+(v.prezzoOS*(1-v.scontoOS/100)).toFixed(2):null;
+        const nST=v.incluso?null:v.custom?null:v.prezzoST?+(v.prezzoST*(1-v.scontoST/100)).toFixed(2):null;
+        if(nOS){totL+=v.prezzoOS*v.qty;totN+=nOS*v.qty;}
+        else if(nST){totL+=v.prezzoST*v.qty;totN+=nST*v.qty;}
+        return[
+          v.nome+(v.per?' ['+v.per+']':''),
+          v.um,v.qty,
+          v.incluso?'Incluso':v.custom?'Su richiesta':nOS?'€ '+nOS.toFixed(2):'—',
+          v.incluso?'':v.custom?'':nST?'€ '+nST.toFixed(2):'—',
+        ];
+      });
+      doc.autoTable({startY:y,
+        head:[['Servizio','U.M.','Qtà','€ ON SITE','€ Studio']],
+        body:rows,theme:'grid',
+        headStyles:{fillColor:B,textColor:W,fontSize:7,fontStyle:'bold',cellPadding:2.5},
+        bodyStyles:{fontSize:8,textColor:BK,cellPadding:2.5},
+        alternateRowStyles:{fillColor:[248,251,255]},
+        columnStyles:{0:{cellWidth:72},1:{cellWidth:16},2:{cellWidth:12,halign:'center'},3:{cellWidth:28,halign:'right'},4:{cellWidth:28,halign:'right'}},
+        margin:{left:ML,right:MR}});
+      y=doc.lastAutoTable.finalY+4;
+    }
+    // Totale
+    if(y>PH-25)newPage();
+    doc.setFillColor(...B);doc.rect(ML,y,PW-ML-MR,14,'F');
+    doc.setTextColor(...W);doc.setFont('helvetica','bold');doc.setFontSize(9);
+    doc.text('TOTALE LORDO',ML+4,y+5.5);doc.text('€ '+totL.toFixed(2),PW-MR-4,y+5.5,{align:'right'});
+    doc.setFontSize(7.5);doc.setTextColor(253,230,138);
+    doc.text('Sconto: € '+(totL-totN).toFixed(2),ML+4,y+11);
+    doc.setFontSize(11);doc.setTextColor(...W);
+    doc.text('TOTALE NETTO: € '+totN.toFixed(2),PW-MR-4,y+11,{align:'right'});
+    y+=18;
+  }
+
+  // SEDI (allegato A)
+  if(document.getElementById('isMultisede').checked&&sedi.length){
+    if(y>PH-60)newPage();
+    y=sh('ALLEGATO A — SEDI OPERATIVE',y);
+    const rows=[];
+    sedi.forEach(s=>s.rows.forEach((r,ri)=>{
+      rows.push([ri===0?s.citta:'',r.mansione,r.n]);
+    }));
+    doc.autoTable({startY:y,head:[['Sede / Città','Mansione','N° Lav.']],body:rows,
+      theme:'grid',
+      headStyles:{fillColor:B,textColor:W,fontSize:7.5,fontStyle:'bold',cellPadding:3},
+      bodyStyles:{fontSize:8,textColor:BK,cellPadding:3},
+      columnStyles:{0:{cellWidth:50},1:{cellWidth:110},2:{cellWidth:20,halign:'right'}},
+      margin:{left:ML,right:MR}});
+    y=doc.lastAutoTable.finalY+6;
+  }
+
+  // NOTE
+  const note=V('p_note').value;
+  if(note){
+    if(y>PH-50)newPage();
+    y=sh('NOTE E CONDIZIONI DI FORNITURA',y);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...GR);
+    doc.splitTextToSize(note,PW-ML-MR).forEach(l=>{if(y>PH-20)newPage();doc.text(l,ML,y);y+=4.5;});
+    y+=4;
+  }
+
+  // FIRME
+  if(y>PH-40)newPage();
+  const bw=(PW-ML-MR-10)/2;
+  doc.setDrawColor(...GR);
+  [[ML,'DELIVERY CARE S.r.l – S.B.'],[ML+bw+10,rag.substring(0,32)]].forEach(([x,name])=>{
+    doc.rect(x,y,bw,28);
+    doc.setTextColor(...B);doc.setFont('helvetica','bold');doc.setFontSize(8);doc.text(name,x+3,y+6);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...GR);
+    doc.text('Per accettazione',x+3,y+12);doc.text('Firma e timbro:',x+3,y+22);
+  });
+
+  // FOOTER
+  const tot=doc.internal.getNumberOfPages();
+  for(let i=1;i<=tot;i++){
+    doc.setPage(i);
+    doc.setFillColor(...B);doc.rect(0,PH-10,PW,10,'F');
+    doc.setTextColor(160,200,240);doc.setFont('helvetica','normal');doc.setFontSize(6.5);
+    doc.text('Delivery Care Srl – Società Benefit  |  Medicina del Lavoro e Sicurezza  |  info@deliverycare.it  |  www.deliverycare.it',PW/2,PH-4.5,{align:'center'});
+    doc.text(`Pag. ${i}/${tot}`,PW-MR,PH-4.5,{align:'right'});
+  }
+
+  doc.save(`Offerta_${rag.replace(/[^a-zA-Z0-9]/g,'_')}_${V('p_num').value||'DC'}.pdf`);
+}
+
+
+// ═══════════════════════════════════════
+// GEMINI API
+// ═══════════════════════════════════════
+function getGemKey(){return 'AIzaSyCZVHWJiKf4ko6FhjpsVHSvMvDdP7XOyDY'}
+async function callAI(prompt,b64pdf=null,text=null){
+  const k=getGemKey();
+  const parts=[];
+  if(b64pdf)parts.push({inlineData:{mimeType:'application/pdf',data:b64pdf}});
+  if(text)parts.push({text:text});
+  parts.push({text:prompt});
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1,maxOutputTokens:2000}})
+  });
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||'Errore Gemini '+r.status);}
+  const d=await r.json();
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+}
+
+// ═══════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════
+const V=id=>document.getElementById(id);
+function showLoader(msg){V('loaderMsg').textContent=msg;V('loader').classList.add('show')}
+function hideLoader(){V('loader').classList.remove('show')}
+function flash(msg,type,pid){
+  const p=V(pid);if(!p)return;
+  const d=document.createElement('div');
+  d.className='alert alert-'+type;d.innerHTML=msg;
+  p.insertBefore(d,p.firstChild);
+  setTimeout(()=>d.remove(),7000);
+}
+function fmtDate(s){if(!s)return'';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// CRM INTEGRATION
+// ═══════════════════════════════════════
+const CRM_SHEET_ID  = localStorage.getItem('dc_crm_sheetid')||'1SxBiE0dW6mQhice6h-CwxH0rk-AdYC3Nt5-7vl9J3RY';
+const CRM_FOLDER_ID = localStorage.getItem('dc_crm_folderid')||'1L_VKyZfeDdqOZPvt-2dZ8ucI5SbEl-Y-';
+const CRM_TOKEN     = ()=>localStorage.getItem('dc_crm_token')||'';
+
+// Modale configurazione CRM
+function openCRMConfig(){
+  const sid=prompt('Inserisci lo Sheet ID del CRM Delivery Care:',localStorage.getItem('dc_crm_sheetid')||'');
+  if(sid){localStorage.setItem('dc_crm_sheetid',sid);}
+}
+
+async function sendToCRM(){
+  const rag=V('c_rag')?.value?.trim();
+  if(!rag){alert('Compila prima i dati azienda (Pag. 1).');return;}
+
+  // Calcola totale netto dalla barra
+  const totNetto=parseFloat(V('tNetto')?.textContent?.replace(/[^0-9.]/g,'')||'0')||0;
+
+  // Prepara payload
+  const payload={
+    id_preventivo: V('p_num').value||`DC-${Date.now()}`,
+    data: V('p_data').value||new Date().toISOString().split('T')[0],
+    ragione_sociale: rag,
+    piva: V('c_piva')?.value||'',
+    sede: V('c_sede')?.value||'',
+    referente: V('c_ref')?.value||'',
+    email: V('c_email')?.value||'',
+    tel: V('c_tel')?.value||'',
+    ateco: V('c_ateco')?.value||'',
+    n_lavoratori: V('c_nlav')?.value||'',
+    mansioni: JSON.stringify(mansioni),
+    servizi: 'Medicina del Lavoro',
+    totale_netto: totNetto,
+    stato: 'Inviato',
+    link_pdf: '',
+    importato_crm: 'no',
+  };
+
+  const sheetId=localStorage.getItem('dc_crm_sheetid')||'';
+  const token=localStorage.getItem('dc_crm_token')||'';
+
+  if(sheetId && token){
+    // Scrivi su Google Sheets
+    showLoader('Invio dati al CRM...');
+    try{
+      const row=[
+        payload.id_preventivo, payload.data,
+        '', // id_cliente (sarà assegnato dal CRM)
+        payload.ragione_sociale, payload.servizi,
+        payload.totale_netto, payload.stato,
+        payload.link_pdf, payload.mansioni, 'no'
+      ];
+      const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Preventivi!A:J:append?valueInputOption=USER_ENTERED`;
+      const r=await fetch(url,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+        body:JSON.stringify({values:[row]})
+      });
+      if(!r.ok) throw new Error('Errore scrittura Sheet');
+      hideLoader();
+      flash(`✅ Preventivo <strong>${payload.id_preventivo}</strong> inviato al CRM! Importa dalla Dashboard CRM.`,'ok','pg1');
+      V('btnCRM').textContent='✅ Inviato al CRM';
+      V('btnCRM').disabled=true;
+    }catch(e){
+      hideLoader();
+      flash('❌ Errore invio CRM: '+e.message,'err','pg1');
+    }
+  } else {
+    // Fallback: salva in localStorage come buffer
+    const buffer=JSON.parse(localStorage.getItem('dc_crm_buffer')||'[]');
+    buffer.push(payload);
+    localStorage.setItem('dc_crm_buffer',JSON.stringify(buffer));
+    flash(`✅ Preventivo <strong>${payload.id_preventivo}</strong> salvato. Aprire il CRM e cliccare "Importa da Preventivatore" per sincronizzare.<br><small>Per connessione diretta: configura Sheet ID e autenticati con Google.</small>`,'warn','pg1');
+    V('btnCRM').textContent='✅ In coda per CRM';
+    V('btnCRM').disabled=true;
+  }
+}
+
+// Lettura buffer da CRM (chiamata dal CRM stesso)
+function getCRMBuffer(){
+  return JSON.parse(localStorage.getItem('dc_crm_buffer')||'[]');
+}
+function clearCRMBuffer(){
+  localStorage.removeItem('dc_crm_buffer');
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  initListino();
+  renderMans();
+  V('p_data').value=new Date().toISOString().split('T')[0];
+  const d=new Date();
+  V('p_num').value=`DC-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-001`;
+  V('p_note').value=`I prezzi si intendono IVA esclusa al 22%.
+Le visite ON SITE sono erogate per gruppi omogenei ≥ 15 lavoratori per giornata.
+Convocazioni a cura di Delivery Care tramite e-mail/SMS con preavviso minimo 20 giorni.
+Giudizi di idoneità inviati entro 3 giorni lavorativi dalla visita.
+Reportistica mensile sull'andamento delle visite (convocati/presentati).
+Documentazione necessaria: DVR, organigramma sicurezza, elenco lavoratori e mansioni.
+Gestione dati nel rispetto del GDPR e normativa privacy vigente.`;
+});
+</script>
+</body>
+</html>
