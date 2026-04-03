@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CRM · Delivery Care</title>
+<script src="config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
@@ -962,9 +963,9 @@ tbody tr:hover td{background:#f8fafc;cursor:pointer}
 // CONFIG & STATE
 // ════════════════════════════════════════════
 let CFG = {
-  clientId: localStorage.getItem('dc_clientid')||'955298691463-hllrcg38trd475hhe4fquuk580rm270e.apps.googleusercontent.com',
-  sheetId:  localStorage.getItem('dc_sheetid')||'1SxBiE0dW6mQhice6h-CwxH0rk-AdYC3Nt5-7vl9J3RY',
-  folderId: localStorage.getItem('dc_folderid')||'1L_VKyZfeDdqOZPvt-2dZ8ucI5SbEl-Y-',
+  clientId: localStorage.getItem('dc_clientid')||(typeof SEGRETI!=='undefined'?SEGRETI.GOOGLE_CLIENT_ID:''),
+  sheetId:  localStorage.getItem('dc_sheetid')||(typeof SEGRETI!=='undefined'?SEGRETI.GOOGLE_SHEET_ID:''),
+  folderId: localStorage.getItem('dc_folderid')||(typeof SEGRETI!=='undefined'?SEGRETI.GOOGLE_FOLDER_ID:''),
   prevUrl:  localStorage.getItem('dc_prevurl')||'',
 };
 
